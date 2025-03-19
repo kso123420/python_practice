@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain-Inspired Portfolio</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.139.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.139.0/examples/js/loaders/OBJLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+        #brainCanvas {
+            width: 100%;
+            height: 100vh;
+            display: block;
+            background-color: #222222;
+        }
+        .overlay-button {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(100, 100, 100, 0.5);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: transform 0.2s ease, background-color 0.2s ease, font-size 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .overlay-button:hover {
+            transform: scale(1.2);
+            background-color: rgba(100, 100, 100, 0.7);
+            border-color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        .overlay-button.expanded {
+            width: 400px;
+            height: auto;
+            border-radius: 10px;
+            font-size: 18px;
+            padding: 10px;
+            text-align: left;
+            align-items: flex-start;
+            justify-content: flex-start;
+            line-height: 1.4;
+            background-color: rgba(150, 150, 150, 0.8);
+            border-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            word-wrap: break-word;
+            white-space: normal;
+            z-index: 1000;
+        }
+        .overlay-button.expanded:hover {
+            transform: scale(1.05);
+            background-color: rgba(150, 150, 150, 0.9);
+            border-color: rgba(255, 255, 255, 1);
+            font-size: 20px;
+            box-shadow: 0 10px 16px rgba(0, 0, 0, 0.25);
+        }
+        #leftFrontalLobe {
+            width: 60px;
+            height: 60px;
+            top: 20%;
+            left: 15%;
+        }
+        #rightFrontalLobe {
+            width: 60px;
+            height: 60px;
+            top: 20%;
+            right: 15%;
+        }
+        #leftTemporalLobe {
+            width: 50px;
+            height: 50px;
+            top: 60%;
+            left: 20%;
+        }
+        #rightTemporalLobe {
+            width: 50px;
+            height: 50px;
+            top: 60%;
+            right: 20%;
+        }
+        #parietalLobe {
+            width: 55px;
+            height: 55px;
+            top: 35%;
+            left: 42.5%;
+        }
+        #occipitalLobe {
+            width: 45px;
+            height: 45px;
+            top: 75%;
+            left: 42.5%;
+        }
+        .hidden {
+            display: none;
+        }
+        .expanded p {
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            font-size: 0.9em;
+            color: #eee;
+        }
+        .expanded h3 {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 0.25em;
+            margin-top: 0.5em;
+        }
+    </style>
+</head>
+<body class="bg-gray-900">
+    <canvas id="brainCanvas"></canvas>
+    <div id="leftFrontalLobe" class="overlay-button" title="Left Frontal Lobe">
+        Left Frontal
+    </div>
+    <div id="rightFrontalLobe" class="overlay-button" title="Right Frontal Lobe">
+        Right Frontal
+    </div>
+    <div id="leftTemporalLobe" class="overlay-button" title="Left Temporal Lobe">
+        Left Temporal
+    </div>
+    <div id="rightTemporalLobe" class="overlay-button" title="Right Temporal Lobe">
+        Right Temporal
+    </div>
+    <div id="parietalLobe" class="overlay-button" title="Parietal Lobe">
+        Parietal
+    </div>
+    <div id="occipitalLobe" class="overlay-button" title="Occipital Lobe">
+        Occipital
+    </div>
+    <script>
+        const canvas = document.getElementById('brainCanvas');
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setClearColor(0x222222);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+        const ambientLight = new THREE.AmbientLight(0x606060);
+        scene.add(ambientLight);
+        const pointLight1 = new THREE.PointLight(0xffffff, 0.8);
+        pointLight1.position.set(2, 3, 1);
+        scene.add(pointLight1);
+        const pointLight2 = new THREE.PointLight(0xffffff, 0.5);
+        pointLight2.position.set(-2, 3, -1);
+        scene.add(pointLight2);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+        controls.rotateSpeed = 0.5;
+        let brainModel;
+        const loader = new THREE.OBJLoader();
+        const modelUrl = "https://raw.githubusercontent.com/alperbayram/3DBrainmodel/refs/heads/main/obj/freesurff.Obj";
+        loader.load(modelUrl, (obj) => {
+            try {
+                brainModel = obj;
+                brainModel.scale.set(0.1, 0.1, 0.1);
+                brainModel.position.set(0, 0, 0);
+                scene.add(brainModel);
+                const boundingBox = new THREE.Box3().setFromObject(brainModel);
+                const center = boundingBox.getCenter(new THREE.Vector3());
+                controls.target.set(center.x, center.y, center.z);
+                camera.lookAt(center);
+                controls.update();
+            } catch (meshError) {
+                console.error('Error creating mesh:', meshError);
+                displayErrorMessage('Error creating 3D model.');
+            }
+        }, (xhr) => {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        }, (error) => {
+            console.error('Error loading model:', error);
+            displayErrorMessage('Failed to load 3D brain model. Please check the URL and your internet connection.');
+        });
+        const leftFrontalButton = document.getElementById('leftFrontalLobe');
+        const rightFrontalButton = document.getElementById('rightFrontalLobe');
+        const leftTemporalButton = document.getElementById('leftTemporalLobe');
+        const rightTemporalButton = document.getElementById('rightTemporalLobe');
+        const parietalButton = document.getElementById('parietalLobe');
+        const occipitalButton = document.getElementById('occipitalLobe');
+        const buttonData = {
+            leftFrontalLobe: {
+                element: leftFrontalButton,
+                expanded: false,
+                content: `
+                    <div style="border-radius: 10px; background-color: rgba(150, 150, 150, 0.9); padding: 10px; width: 300px;">
+                        <h3>Left Frontal Lobe</h3>
+                        <p>Responsible for:</p>
+                        <ul>
+                            <li>Motor function</li>
+                            <li>Problem solving</li>
+                            <li>Speech production (Broca's area)</li>
+                            <li>Decision making</li>
+                        </ul>
+                    </div>
+                `
+            },
+            rightFrontalLobe: {
+                element: rightFrontalButton,
+                expanded: false,
+                content: `
+                    <div style="border-radius: 10px; background-color: rgba(150, 150, 150, 0.9); padding: 10px; width: 300px;">
+                        <h3>Right Frontal Lobe</h3>
+                        <p>Involved in:</p>
+                        <ul>
+                            <li>Nonverbal communication</li>
+                            <li>Emotional processing</li>
+                            <li>Risk assessment</li>
+                            <li>Impulse control</li>
+                        </ul>
+                    </div>
+                `
+            },
+            leftTemporalLobe: {
+                element: leftTemporalButton,
+                expanded: false,
+                content: `
+                    <div style="border-radius: 10px; background-color: rgba(150, 150, 150, 0.9); padding: 10px; width: 300px;">
+                        <h3>Left Temporal Lobe</h3>
+                        <p>Key functions:</p>
+                        <ul>
+                            <li>Auditory processing</li>
+                            <li>Language comprehension (Wernicke's area)</li>
+                            <li>Memory retrieval</li>
+                            <li>Object recognition</li>
+                        </ul>
+                    </div>
+                `
+            },
+            rightTemporalLobe: {
+                element: rightTemporalButton,
+                expanded: false,
+                content: `
+                    <div style="border-radius: 10px; background-color: rgba(150, 150, 150, 0.9); padding: 10px; width: 300px;">
+                        <h3>Right Temporal Lobe</h3>
+                        <p>Important for:</p>
+                        <ul>
+                            <li>Music processing</li>
+                            <li>Facial recognition</li>
+                            <li>Spatial navigation</li>
+                            <li>Emotional responses</li>
+                        </ul>
+                    </div>
+                `
+            },
+            parietalLobe: {
+                element: parietalButton,
+                expanded: false,
+                content: `
+                    <div style="border-radius: 10px; background-color: rgba(150, 150, 150, 0.9); padding: 10px; width: 300px;">
+                        <h3>Parietal Lobe</h3>
+                        <p>Processes:</p>
+                        <ul>
+                            <li>Sensory information (touch, temperature, pain)</li>
+                            <li>Spatial awareness</li>
+                            <li>Navigation</li>
+                            <li>Calculation</li>
+                        </ul>
+                    </div>
+                `
+            },
+            occipitalLobe: {
+                element: occipitalButton,
+                expanded: false,
+                content: `
+                    <div style="border-radius: 10px; background-color: rgba(150, 150, 150, 0.9); padding: 10px; width: 300px;">
+                        <h3>Occipital Lobe</h3>
+                        <p>Responsible for:</p>
+                        <ul>
+                            <li>Visual perception</li>
+                            <li>Color recognition</li>
+                            <li>Motion detection</li>
+                            <li>Spatial processing</li>
+                        </ul>
+                    </div>
+                `
+            }
+        };
+        function handleButtonClick(buttonId) {
+            const buttonDataEntry = buttonData[buttonId];
+            const buttonElement = buttonDataEntry.element;
+            if (buttonDataEntry.expanded) {
+                buttonElement.classList.remove('expanded');
+                buttonElement.innerHTML = buttonId === 'leftFrontalLobe' ? 'Left Frontal' :
+                    buttonId === 'rightFrontalLobe' ? 'Right Frontal' :
+                        buttonId === 'leftTemporalLobe' ? 'Left Temporal' :
+                            buttonId === 'rightTemporalLobe' ? 'Right Temporal' :
+                                buttonId === 'parietalLobe' ? 'Parietal' : 'Occipital';
+                buttonDataEntry.expanded = false;
+            } else {
+                for (const key in buttonData) {
+                    if (buttonData[key].expanded && key !== buttonId) {
+                        const otherButton = buttonData[key].element;
+                        otherButton.classList.remove('expanded');
+                        otherButton.innerHTML = key === 'leftFrontalLobe' ? 'Left Frontal' :
+                            key === 'rightFrontalLobe' ? 'Right Frontal' :
+                                key === 'leftTemporalLobe' ? 'Left Temporal' :
+                                    key === 'rightTemporalLobe' ? 'Right Temporal' :
+                                        key === 'parietalLobe' ? 'Parietal' : 'Occipital';
+                        buttonData[key].expanded = false;
+                    }
+                }
+                buttonElement.classList.add('expanded');
+                buttonElement.innerHTML = buttonDataEntry.content;
+                buttonDataEntry.expanded = true;
+            }
+        }
+        leftFrontalButton.addEventListener('click', () => handleButtonClick('leftFrontalLobe'));
+        rightFrontalButton.addEventListener('click', () => handleButtonClick('rightFrontalLobe'));
+        leftTemporalButton.addEventListener('click', () => handleButtonClick('leftTemporalLobe'));
+        rightTemporalButton.addEventListener('click', () => handleButtonClick('rightTemporalLobe'));
+        parietalButton.addEventListener('click', () => handleButtonClick('parietalLobe'));
+        occipitalButton.addEventListener('click', () => handleButtonClick('occipitalLobe'));
+        function resizeRendererToDisplaySize(renderer) {
+            const canvas = renderer.domElement;
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const needResize = canvas.width !== width || canvas.height !== height;
+            if (needResize) {
+                renderer.setSize(width, height, false);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            }
+            return needResize;
+        }
+        let buttonCoordinates = {
+            leftFrontalLobe: { x: 0, y: 0, z: 0 },
+            rightFrontalLobe: { x: 0, y: 0, z: 0 },
+            leftTemporalLobe: { x: 0, y: 0, z: 0 },
+            rightTemporalLobe: { x: 0, y: 0, z: 0 },
+            parietalLobe: { x: 0, y: 0, z: 0 },
+            occipitalLobe: { x: 0, y: 0, z: 0 },
+        };
+        let baseButtonSize = 10;
+        function updateButtonPosition(buttonElement, targetPosition, isVisible) {
+            const canvasRect = renderer.domElement.getBoundingClientRect();
+            const vector = new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z);
+            vector.project(camera);
+            let x = Math.round((vector.x + 1) * canvasRect.width / 2 + canvasRect.left);
+            let y = Math.round((-vector.y + 1) * canvasRect.height / 2 + canvasRect.top);
+            const halfButtonWidth = buttonElement.offsetWidth / 2;
+            const halfButtonHeight = buttonElement.offsetHeight / 2;
+            x -= halfButtonWidth;
+            y -= halfButtonHeight;
+            buttonElement.style.left = `${x}px`;
+            buttonElement.style.top = `${y}px`;
+            buttonElement.style.display = isVisible ? 'flex' : 'none';
+        }
+        function animate() {
+            requestAnimationFrame(animate);
+            resizeRendererToDisplaySize(renderer);
+            controls.update();
+            renderer.render(scene, camera);
+            if (brainModel) {
+                const lobePositions = {
+                    leftFrontalLobe: new THREE.Vector3(-0.1, 0.05, -0.25),
+                    rightFrontalLobe: new THREE.Vector3(0.1, 0.05, -0.25),
+                    leftTemporalLobe: new THREE.Vector3(-0.25, 0.0, 0.03),
+                    rightTemporalLobe: new THREE.Vector3(0.25, 0.0, 0.03),
+                    parietalLobe: new THREE.Vector3(0.0, 0.23, 0.1),
+                    occipitalLobe: new THREE.Vector3(0.0, 0.0, 0.3),
+                };
+                buttonCoordinates = lobePositions;
+                const occlusionResults = performOcclusionCheck(lobePositions);
+                const distance = camera.position.distanceTo(brainModel.position);
+                const scaleFactor = 5 / distance;
+                const dynamicButtonSize = Math.max(20, baseButtonSize * scaleFactor);
+                leftFrontalButton.style.width = `${dynamicButtonSize}px`;
+                leftFrontalButton.style.height = `${dynamicButtonSize}px`;
+                rightFrontalButton.style.width = `${dynamicButtonSize}px`;
+                rightFrontalButton.style.height = `${dynamicButtonSize}px`;
+                leftTemporalButton.style.width = `${dynamicButtonSize}px`;
+                leftTemporalButton.style.height = `${dynamicButtonSize}px`;
+                rightTemporalButton.style.width = `${dynamicButtonSize}px`;
+                rightTemporalButton.style.height = `${dynamicButtonSize}px`;
+                parietalButton.style.width = `${dynamicButtonSize}px`;
+                parietalButton.style.height = `${dynamicButtonSize}px`;
+                occipitalButton.style.width = `${dynamicButtonSize}px`;
+                occipitalButton.style.height = `${dynamicButtonSize}px`;
+                updateButtonPosition(leftFrontalButton, buttonCoordinates.leftFrontalLobe, occlusionResults.leftFrontalLobe);
+                updateButtonPosition(rightFrontalButton, buttonCoordinates.rightFrontalLobe, occlusionResults.rightFrontalLobe);
+                updateButtonPosition(leftTemporalButton, buttonCoordinates.leftTemporalLobe, occlusionResults.leftTemporalLobe);
+                updateButtonPosition(rightTemporalButton, buttonCoordinates.rightTemporalLobe, occlusionResults.rightTemporalLobe);
+                updateButtonPosition(parietalButton, buttonCoordinates.parietalLobe, occlusionResults.parietalLobe);
+                updateButtonPosition(occipitalButton, buttonCoordinates.occipitalLobe, occlusionResults.occipitalLobe);
+            }
+        }
+        function performOcclusionCheck(lobePositions) {
+            const results = {};
+            const raycaster = new THREE.Raycaster();
+            for (const lobeName in lobePositions) {
+                const lobePosition = lobePositions[lobeName];
+                raycaster.set(camera.position, lobePosition.clone().sub(camera.position).normalize());
+                const intersects = raycaster.intersectObject(brainModel, true);
+                let isOccluded = false;
+                if (intersects.length > 0) {
+                    const closestIntersectionDistance = intersects[0].distance;
+                    const distanceToLobe = camera.position.distanceTo(lobePosition);
+                    if (closestIntersectionDistance < distanceToLobe) {
+                        isOccluded = true;
+                    }
+                }
+                results[lobeName] = !isOccluded;
+            }
+            return results;
+        }
+        resizeRendererToDisplaySize(renderer);
+        animate();
+        function displayErrorMessage(message) {
+            const errorContainer = document.createElement('div');
+            errorContainer.style.position = 'absolute';
+            errorContainer.style.top = '20px';
+            errorContainer.style.left = '50%';
+            errorContainer.style.transform = 'translateX(-50%)';
+            errorContainer.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+            errorContainer.style.color = 'white';
+            errorContainer.style.padding = '10px';
+            errorContainer.style.borderRadius = '5px';
+            errorContainer.style.zIndex = '1000';
+            errorContainer.textContent = message;
+            document.body.appendChild(errorContainer);
+        }
+    </script>
+</body>
+</html>
